@@ -1,8 +1,12 @@
+#!/usr/bin/env python
+
+"""
+Example application illustrating browser id
+"""
+
 from wsgibrowserid.wsgiapp import Application
 
-
-page = '''\
-<html>
+page = '''<html>
  <head>
   <script src="https://browserid.org/include.js"></script>
   <script src="/auth/wsgibrowserid.js"></script>
@@ -22,6 +26,9 @@ page = '''\
   //window.addEventListener('load', updateStatus(), false);
   updateStatus();
   </script>
+ <pre id="environ">
+ %(environ)s
+ </pre>
  </body>
 </html>
 '''
@@ -33,13 +40,15 @@ class ExampleApp(object):
         self.auth_app = auth_app
 
     def __call__(self, environ, start_response):
+        _environ = '\n'.join(['%s: %s' % (key, environ[key])
+                              for key in sorted(environ.keys())])
         path_info = environ.get('PATH_INFO', '')
         if path_info.startswith('/auth/'):
             environ['SCRIPT_NAME'] = environ.get('SCRIPT_NAME', '') + '/auth'
             environ['PATH_INFO'] = path_info[5:]
             return self.auth_app(environ, start_response)
         start_response('200 OK', [('content-type', 'text/html')])
-        return [page]
+        return [page % dict(environ=_environ)]
 
 
 if __name__ == '__main__':
